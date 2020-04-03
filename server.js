@@ -22,6 +22,7 @@ let max_number = 10;
 let current_player = 0;
 
 let current_weights = [];
+
 for (var i=0; i<52; i++) {
 	current_weights[i] = i;
 }
