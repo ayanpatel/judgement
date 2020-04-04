@@ -2,22 +2,14 @@ import Card from './card';
 
 export default class Dealer {
     constructor(scene) {
-        this.dealCards = (starting_number) => {
-            let playerSprite;
-            let opponentSprite;
-            if (scene.isPlayerA) {
-                playerSprite = '2C';
-                opponentSprite = 'red_back';
-            } else {
-                playerSprite = '2D';
-                opponentSprite = 'red_back';
-            };
-            for (let i = 0; i < 5; i++) {
+        this.dealCards = (myCards) => {
+            let opponentSprite = 'red_back';
+            for (let i = 0; i < myCards.length; i++) {
                 let playerCard = new Card(scene);
-                playerCard.render(475 + (i * 100), 650, playerSprite);
+                playerCard.render(275 + (i * 100), 650, myCards[i]);
 
                 let opponentCard = new Card(scene);
-                scene.opponentCards.push(opponentCard.render(475 + (i * 100), 125, opponentSprite).disableInteractive());
+                scene.opponentCards.push(opponentCard.render(275 + (i * 100), 125, opponentSprite).disableInteractive());
             }
         }
     }

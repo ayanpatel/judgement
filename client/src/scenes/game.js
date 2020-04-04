@@ -24,6 +24,10 @@ export default class Game extends Phaser.Scene {
     }
 
     create() {
+       // this.add.plugin(PhaserInput.Plugin);
+
+        //var input = this.add.inputField(10, 90);
+
         this.playerName = '';
         this.players = '';
         this.isPlayerA = false;
@@ -63,8 +67,8 @@ export default class Game extends Phaser.Scene {
         })
 
         this.startText.on('pointerdown', function () {
-            var starting_number = prompt("Please enter the number of cards to start with", "10");
-            self.socket.emit("startgame", starting_number);
+           //var starting_number = prompt("Please enter the number of cards to start with", "10");
+            self.socket.emit("startgame");
         })
         this.startText.on('pointerover', function () {
             self.startText.setColor('#ff69b4');
@@ -73,12 +77,12 @@ export default class Game extends Phaser.Scene {
             self.startText.setColor('#00ffff');
         })
 
-        this.socket.on('dealCards', function (starting_number, trump) {
-            self.dealer.dealCards(starting_number);
+        this.socket.on('dealCards', function (myCards, trump) {
+            self.dealer.dealCards(myCards);
             self.dealText.disableInteractive();
             self.trumpText.setText('Trump: ' + trump);
-            var prediction = prompt("Please enter your prediction", "0");
-            self.socket.emit('prediction', prediction);
+            //var prediction = prompt("Please enter your prediction", "0");
+            //self.socket.emit('prediction', prediction);
         })
 
         this.socket.on('cardPlayed', function (gameObject, isPlayerA) {

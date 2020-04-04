@@ -2,6 +2,8 @@ const server = require('express')();
 const http = require('http').createServer(server);
 const io = require('socket.io')(http);
 
+//http.maxConnections = 2;
+
 let players = [];
 let names = {};
 
@@ -14,11 +16,25 @@ deck.push('2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C', 'JC', 'QC', 'KC
 deck.push('2D', '3D', '4D', '5D', '6D', '7D', '8D', '9D', '10D', 'JD', 'QD', 'KD', 'AD');
 deck.push('2S', '3S', '4S', '5S', '6S', '7S', '8S', '9S', '10S', 'JS', 'QS', 'KS', 'AS');
 
+let temp_deck = [...deck];
+
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+    }
+    return a;
+}
+
 let suits = ["Spades", "Diamonds", "Clubs", "Hearts", "None"];
 
 let trump = 0;
 let round = 0;
-let max_number = 10;
+let current_number = 10;
+let starting_number = 10;
 let current_player = 0;
 
 let current_weights = [];
@@ -35,6 +51,12 @@ io.on('connection', function (socket) {
     players.push(socket.id);
     scores[socket.id] = 0;
 
+    staring_number = Number(52 / players.length);
+    if (starting_number > 10) {
+        starting_number = 10;
+    }
+    current_number = starting_number;
+
     if (players.length === 1) {
     	console.log('Player A assigned to ' + socket.id);
         io.emit('isPlayerA');
@@ -45,9 +67,17 @@ io.on('connection', function (socket) {
     	io.emit('names', Object.values(names));
     })
 
-    socket.on('startgame', function (starting_number) {
-    	max_number = Number(starting_number);
-    	io.emit('dealCards', starting_number, suits[trump]);
+    socket.on('startgame', function () {
+    	temp_deck = shuffle(temp_deck);
+        var startN = 0;
+        var endN = current_number;
+        var i;
+        for (i=0; i<players.length; i++) {
+            io.to(players[i]).emit('dealCards', temp_deck.slice(startN, endN), suits[trump%5]);
+            startN = endN;
+            endN = endN + current_number;
+        }
+    	trump = trump + 1;
     })
 
     socket.on('dealCards', function (starting_number) {
