@@ -8,6 +8,7 @@ let players = [];
 let names = {};
 
 let scores = {};
+let temp_scores = {};
 let predictions = {};
 
 let deck = [];
@@ -33,27 +34,50 @@ let suits = ["Spades", "Diamonds", "Clubs", "Hearts", "None"];
 
 let trump = 0;
 let round = 0;
+let hands = 0;
 let current_number = 10;
 let starting_number = 10;
 let current_player = 0;
 
 let current_weights = [];
 
-for (var i=0; i<52; i++) {
-	current_weights[i] = i;
+function reset_weights() {
+    for (var i=0; i<52; i++) {
+        current_weights[i] = i;
+    }
+    if (trump%5 != 4) {
+        for (var i=39-(13*(trump%5)); i<52-(13*(trump%5)); i++) {
+            current_weights[i] = current_weights[i] + 200;
+        }
+    }
 }
 
+reset_weights();
+
 let current_hand = {};
+
+function deal() {
+    temp_deck = shuffle(temp_deck);
+    var startN = 0;
+    var endN = current_number;
+    var i;
+    for (i=0; i<players.length; i++) {
+        io.to(players[i]).emit('dealCards', temp_deck.slice(startN, endN), suits[trump%5]);
+        startN = endN;
+        endN = endN + current_number;
+    }
+}
 
 io.on('connection', function (socket) {
     console.log('A user connected: ' + socket.id);
 
     players.push(socket.id);
     scores[socket.id] = 0;
+    temp_scores[socket.id] = 0;
 
-    staring_number = Number(52 / players.length);
+    starting_number = Number(52 / players.length); 
     if (starting_number > 10) {
-        starting_number = 10;
+        starting_number = 2;
     }
     current_number = starting_number;
 
@@ -65,20 +89,11 @@ io.on('connection', function (socket) {
     socket.on('name', function (name) {
     	names[socket.id] = name;
     	io.emit('names', Object.values(names));
-    })
+    });
 
     socket.on('startgame', function () {
-    	temp_deck = shuffle(temp_deck);
-        var startN = 0;
-        var endN = current_number;
-        var i;
-        for (i=0; i<players.length; i++) {
-            io.to(players[i]).emit('dealCards', temp_deck.slice(startN, endN), suits[trump%5]);
-            startN = endN;
-            endN = endN + current_number;
-        }
-    	trump = trump + 1;
-    })
+    	deal();
+    });
 
     socket.on('dealCards', function (starting_number) {
     	max_number = Number(starting_number);
@@ -87,11 +102,71 @@ io.on('connection', function (socket) {
 
     socket.on('prediction', function (prediction) {
     	predictions[socket.id] = prediction;
-    })
+        if (Object.keys(predictions).length == players.length) {
+            io.emit('play');
+            io.to(players[current_player%players.length]).emit('yourturn');
+        }
+    });
 
-    socket.on('cardPlayed', function (gameObject, isPlayerA) {
-        io.emit('cardPlayed', gameObject, isPlayerA);
+    socket.on('cardPlayed', function (gameObject, sid) {
+        io.emit('cardPlayed', gameObject, sid);
         current_hand[gameObject.textureKey] = socket.id;
+        if (Object.keys(current_hand).length == 1) {
+            var group = Math.floor(deck.indexOf(gameObject.textureKey) / 13);
+            for (var i=group*13; i<(group*13)+13; i++) {
+                current_weights[i] = current_weights[i] + 100;
+            }
+        }
+        if (Object.keys(current_hand).length == players.length) {
+            var maxVal = 0;
+            var cw,ct;
+            var winner;
+            for (var i=0; i<players.length; i++) {
+                ct = Object.keys(current_hand)[i];
+                cw = current_weights[deck.indexOf(ct)];
+                if (cw > maxVal) {
+                    maxVal = cw;
+                    winner = current_hand[ct];
+                }
+            }
+            current_player = players.indexOf(winner);
+            temp_scores[winner] = temp_scores[winner] + 1;
+            current_hand = {};
+            reset_weights();
+            hands = hands + 1;
+            io.emit('clearZone', names[winner]);
+            if (hands == current_number) {
+                hands = 0;
+                trump = trump + 1;
+                round = round + 1;
+                for (var i=0; i<players.length; i++) {
+                    if (temp_scores[players[i]] == predictions[players[i]]) {
+                        scores[players[i]] = scores[players[i]] + temp_scores[players[i]] + 10;
+                    }
+                }
+                temp_scores = {};
+                for (var i=0; i<players.length; i++) {
+                    temp_scores[players[i]] = 0;
+                }
+                predictions = {};
+                io.emit('scores', scores);
+                if (round == (starting_number*2)+1) {
+                    io.emit('endgame');
+                } else {
+                    if (round >= starting_number) {
+                        current_number = current_number + 1;
+                    } else {
+                        current_number = current_number - 1;
+                    }
+                    deal();
+                }
+            } else {
+                io.to(players[current_player%players.length]).emit('yourturn');
+            }
+        } else {
+            current_player = current_player + 1;
+            io.to(players[current_player%players.length]).emit('yourturn');
+        }
     });
 
     socket.on('disconnect', function () {

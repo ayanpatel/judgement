@@ -31,7 +31,7 @@ export default class Game extends Phaser.Scene {
         this.playerName = '';
         this.players = '';
         this.isPlayerA = false;
-        this.opponentCards = [];
+        this.zoneCards = [];
 
         this.zone = new Zone(this);
         this.dropZone = this.zone.renderZone();
@@ -61,6 +61,19 @@ export default class Game extends Phaser.Scene {
 
         this.startText = this.add.text(75, 450, ['START GAME']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
 
+        this.predictText = this.add.text(75, 550, ['PREDICT']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+
+        this.predictText.on('pointerdown', function () {
+            var prediction = prompt("Please enter your prediction", "0");
+            self.socket.emit('prediction', prediction);
+        })
+        this.predictText.on('pointerover', function () {
+            self.predictText.setColor('#ff69b4');
+        })
+        this.predictText.on('pointerout', function () {
+            self.predictText.setColor('#00ffff');
+        })
+
         this.socket.on('isPlayerA', function () {
             self.isPlayerA = true;
             self.startText.setInteractive();
@@ -81,18 +94,49 @@ export default class Game extends Phaser.Scene {
             self.dealer.dealCards(myCards);
             self.dealText.disableInteractive();
             self.trumpText.setText('Trump: ' + trump);
-            //var prediction = prompt("Please enter your prediction", "0");
-            //self.socket.emit('prediction', prediction);
+            self.predictText.setInteractive();
         })
 
-        this.socket.on('cardPlayed', function (gameObject, isPlayerA) {
-            if (isPlayerA !== self.isPlayerA) {
+        this.socket.on('play', function () {
+            self.predictText.disableInteractive();
+        })
+
+        this.turnText = this.add.text(75, 250, ['YOUR TURN']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#000000').disableInteractive();
+
+        this.socket.on('yourturn', function () {
+            self.turnText.setColor('#ff69b4');
+        })
+
+        this.socket.on('cardPlayed', function (gameObject, sid) {
+            if (sid != self.socket.id) {
                 let sprite = gameObject.textureKey;
-                self.opponentCards.shift().destroy();
+                //self.opponentCards.shift().destroy();
                 self.dropZone.data.values.cards++;
                 let card = new Card(self);
-                card.render(((self.dropZone.x - 350) + (self.dropZone.data.values.cards * 50)), (self.dropZone.y), sprite).disableInteractive();
+                self.zoneCards.push(card.render(((self.dropZone.x - 350) + (self.dropZone.data.values.cards * 50)), (self.dropZone.y), sprite).disableInteractive());
+                //zoneCards.push(card);
             }
+        })
+
+        this.handWinnerText = this.add.text(300, 150, ['Hand Winner: ']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+
+        this.scoreText = this.add.text(500, 150, ['Score: 0']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+
+        this.socket.on('scores', function (scores) {
+            self.scoreText.setText("Score: " + scores[self.socket.id]);
+        })
+
+        this.socket.on('clearZone', function (name) {
+            self.handWinnerText.setText('Hand Winner: ' + name);
+            for (var i=0; i<self.zoneCards.length; i++) {
+                self.zoneCards[i].destroy();
+            }
+            self.zoneCards = [];
+            self.dropZone = self.zone.renderZone();
+        })
+
+        this.socket.on('endgame', function () {
+            //show winner and scores
         })
 
         this.dealText = this.add.text(75, 350, ['DEAL CARDS']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').setInteractive();
@@ -133,7 +177,9 @@ export default class Game extends Phaser.Scene {
             gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 50);
             gameObject.y = dropZone.y;
             gameObject.disableInteractive();
-            self.socket.emit('cardPlayed', gameObject, self.isPlayerA);
+            self.zoneCards.push(gameObject);
+            self.turnText.setColor('#000000');
+            self.socket.emit('cardPlayed', gameObject, self.socket.id);
         })
     }
     
