@@ -80,7 +80,6 @@ export default class Game extends Phaser.Scene {
         })
 
         this.startText.on('pointerdown', function () {
-           //var starting_number = prompt("Please enter the number of cards to start with", "10");
             self.socket.emit("startgame");
         })
         this.startText.on('pointerover', function () {
@@ -99,18 +98,20 @@ export default class Game extends Phaser.Scene {
 
         this.socket.on('play', function () {
             self.predictText.disableInteractive();
+            console.log('predict disable received');
         })
 
-        this.turnText = this.add.text(75, 250, ['YOUR TURN']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#000000').disableInteractive();
+        this.turnText = this.add.text(75, 250, ['YOUR TURN']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#ff69b4').disableInteractive();
+        self.turnText.visible = false;
 
         this.socket.on('yourturn', function () {
-            self.turnText.setColor('#ff69b4');
+            self.turnText.visible = true;
+            console.log("yourturn received");
         })
 
         this.socket.on('cardPlayed', function (gameObject, sid) {
             if (sid != self.socket.id) {
                 let sprite = gameObject.textureKey;
-                //self.opponentCards.shift().destroy();
                 self.dropZone.data.values.cards++;
                 let card = new Card(self);
                 self.zoneCards.push(card.render(((self.dropZone.x - 350) + (self.dropZone.data.values.cards * 50)), (self.dropZone.y), sprite).disableInteractive());
@@ -135,23 +136,13 @@ export default class Game extends Phaser.Scene {
             self.dropZone = self.zone.renderZone();
         })
 
-        this.socket.on('endgame', function () {
-            //show winner and scores
-        })
+        this.endText = this.add.text(500, 600, ['GAME OVER']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#ff69b4').disableInteractive();
+        self.endText.visible = false;
 
-        this.dealText = this.add.text(75, 350, ['DEAL CARDS']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').setInteractive();
-
-        this.dealText.on('pointerdown', function () {
-            var starting_number = prompt("Please enter the number of cards to start with", "10");
-            self.socket.emit("dealCards", starting_number);
-        })
-
-        this.dealText.on('pointerover', function () {
-            self.dealText.setColor('#ff69b4');
-        })
-
-        this.dealText.on('pointerout', function () {
-            self.dealText.setColor('#00ffff');
+        this.socket.on('endgame', function (winner) {
+            self.endText.setText('GAME OVER! Winner: ' + winner);
+            self.endText.visible = true;
+            console.log('game over');
         })
 
         this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
@@ -178,7 +169,8 @@ export default class Game extends Phaser.Scene {
             gameObject.y = dropZone.y;
             gameObject.disableInteractive();
             self.zoneCards.push(gameObject);
-            self.turnText.setColor('#000000');
+            self.turnText.visible = false;
+            console.log('drop turn text blank');
             self.socket.emit('cardPlayed', gameObject, self.socket.id);
         })
     }

@@ -95,11 +95,6 @@ io.on('connection', function (socket) {
     	deal();
     });
 
-    socket.on('dealCards', function (starting_number) {
-    	max_number = Number(starting_number);
-        io.emit('dealCards', starting_number, suits[trump]);
-    });
-
     socket.on('prediction', function (prediction) {
     	predictions[socket.id] = prediction;
         if (Object.keys(predictions).length == players.length) {
@@ -150,8 +145,16 @@ io.on('connection', function (socket) {
                 }
                 predictions = {};
                 io.emit('scores', scores);
-                if (round == (starting_number*2)+1) {
-                    io.emit('endgame');
+                if (round == ((starting_number-1)*2)+1) {
+                    var winnerName;
+                    var maxScore = 0;
+                    for (var i=0; i<players.length; i++) {
+                        if (scores[players[i]] > maxScore) {
+                            winnerName = names[players[i]];
+                            maxScore = scores[players[i]];
+                        }
+                    }
+                    io.emit('endgame', winnerName);
                 } else {
                     if (round >= starting_number) {
                         current_number = current_number + 1;
