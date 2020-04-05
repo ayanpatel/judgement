@@ -41,7 +41,8 @@ export default class Game extends Phaser.Scene {
 
         let self = this;
 
-        this.socket = io('http://localhost:3000');
+        //this.socket = io('http://localhost:3000');
+        this.socket = io('http://192.168.1.142:3000');
 
         this.socket.on('connect', function () {
             console.log('Connected!');
@@ -91,7 +92,6 @@ export default class Game extends Phaser.Scene {
 
         this.socket.on('dealCards', function (myCards, trump) {
             self.dealer.dealCards(myCards);
-            self.dealText.disableInteractive();
             self.trumpText.setText('Trump: ' + trump);
             self.predictText.setInteractive();
         })

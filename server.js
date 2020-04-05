@@ -77,7 +77,7 @@ io.on('connection', function (socket) {
 
     starting_number = Number(52 / players.length); 
     if (starting_number > 10) {
-        starting_number = 2;
+        starting_number = 3;
     }
     current_number = starting_number;
 
