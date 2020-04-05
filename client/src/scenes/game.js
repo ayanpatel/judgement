@@ -63,6 +63,7 @@ export default class Game extends Phaser.Scene {
         this.startText = this.add.text(75, 450, ['START GAME']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
 
         this.predictText = this.add.text(75, 550, ['PREDICT']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+        self.predictText.visible = false;
 
         this.predictText.on('pointerdown', function () {
             var prediction = prompt("Please enter your prediction", "0");
@@ -82,6 +83,7 @@ export default class Game extends Phaser.Scene {
 
         this.startText.on('pointerdown', function () {
             self.socket.emit("startgame");
+            self.startText.disableInteractive();
         })
         this.startText.on('pointerover', function () {
             self.startText.setColor('#ff69b4');
@@ -90,14 +92,28 @@ export default class Game extends Phaser.Scene {
             self.startText.setColor('#00ffff');
         })
 
+        this.predictionsText = this.add.text(300, 200, ['Predictions: ']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+
+        this.socket.on('predictions', function (predictions, names) {
+            var p = 'Predictions: ';
+            var sid;
+            for (var i=0; i<Object.keys(predictions).length; i++) {
+                sid = Object.keys(predictions)[i];
+                p = p + names[sid] + '-' + predictions[sid] + ' ';
+            }
+            self.predictionsText.setText(p);
+        })
+
         this.socket.on('dealCards', function (myCards, trump) {
             self.dealer.dealCards(myCards);
             self.trumpText.setText('Trump: ' + trump);
             self.predictText.setInteractive();
+            self.predictText.visible = true;
         })
 
         this.socket.on('play', function () {
             self.predictText.disableInteractive();
+            self.predictText.visible = false;
             console.log('predict disable received');
         })
 
@@ -127,13 +143,17 @@ export default class Game extends Phaser.Scene {
             self.scoreText.setText("Score: " + scores[self.socket.id]);
         })
 
-        this.socket.on('clearZone', function (name) {
-            self.handWinnerText.setText('Hand Winner: ' + name);
+        function clearZone() {
             for (var i=0; i<self.zoneCards.length; i++) {
                 self.zoneCards[i].destroy();
             }
             self.zoneCards = [];
             self.dropZone = self.zone.renderZone();
+        }
+
+        this.socket.on('clearZone', function (name) {
+            self.handWinnerText.setText('Hand Winner: ' + name);
+            setTimeout(clearZone, 1000);
         })
 
         this.endText = this.add.text(500, 600, ['GAME OVER']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#ff69b4').disableInteractive();

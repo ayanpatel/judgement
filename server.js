@@ -97,6 +97,7 @@ io.on('connection', function (socket) {
 
     socket.on('prediction', function (prediction) {
     	predictions[socket.id] = prediction;
+        io.emit('predictions', predictions, names);
         if (Object.keys(predictions).length == players.length) {
             io.emit('play');
             io.to(players[current_player%players.length]).emit('yourturn');
