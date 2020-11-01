@@ -11,6 +11,13 @@ export default class Game extends Phaser.Scene {
         });
     }
 
+    init(data) {
+        this.gameId = data.gId;
+        this.name = data.name;
+        this.socket = data.sock;
+        this.guid = data.guid;
+    }
+
     preload() {
         let deck = ['red_back'];
         deck.push('2H', '3H', '4H', '5H', '6H', '7H', '8H', '9H', '10H', 'JH', 'QH', 'KH', 'AH');
@@ -24,9 +31,6 @@ export default class Game extends Phaser.Scene {
     }
 
     create() {
-       // this.add.plugin(PhaserInput.Plugin);
-
-        //var input = this.add.inputField(10, 90);
 
         this.playerName = '';
         this.players = '';
@@ -41,15 +45,15 @@ export default class Game extends Phaser.Scene {
 
         let self = this;
 
-        this.socket = io('http://localhost:3000');
-        //this.socket = io('http://192.168.1.142:3000');
+        this.scale.on('resize', this.resize, this);
 
-        this.socket.on('connect', function () {
-            console.log('Connected!');
-            var name = prompt("Please enter your name");
-            self.playerName = name;
-            self.socket.emit("name", name);
-        });
+        const screenCenterX = this.cameras.main.width / 2;
+        const screenCenterY = this.cameras.main.height / 2;
+
+        self.playerName = self.name;
+        self.socket.emit("name", self.gameId, self.name, self.guid);
+
+        this.gameIdText = this.add.text(75, 150, 'Game Code: ' + self.gameId).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
 
         this.playerText = this.add.text(1000, 150, self.playerName).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
 
@@ -61,13 +65,14 @@ export default class Game extends Phaser.Scene {
         })
 
         this.startText = this.add.text(75, 450, ['START GAME']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+        self.startText.visible = false;
 
         this.predictText = this.add.text(75, 550, ['PREDICT']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
         self.predictText.visible = false;
 
         this.predictText.on('pointerdown', function () {
             var prediction = prompt("Please enter your prediction", "0");
-            self.socket.emit('prediction', prediction);
+            self.socket.emit('prediction', self.gameId, self.guid, prediction);
         })
         this.predictText.on('pointerover', function () {
             self.predictText.setColor('#ff69b4');
@@ -77,13 +82,15 @@ export default class Game extends Phaser.Scene {
         })
 
         this.socket.on('isPlayerA', function () {
+            self.startText.visible = true;
             self.isPlayerA = true;
             self.startText.setInteractive();
         })
 
         this.startText.on('pointerdown', function () {
-            self.socket.emit("startgame");
+            self.socket.emit("startgame", self.gameId);
             self.startText.disableInteractive();
+            self.startText.visible = false;
         })
         this.startText.on('pointerover', function () {
             self.startText.setColor('#ff69b4');
@@ -96,10 +103,10 @@ export default class Game extends Phaser.Scene {
 
         this.socket.on('predictions', function (predictions, names) {
             var p = 'Predictions: ';
-            var sid;
+            var guid;
             for (var i=0; i<Object.keys(predictions).length; i++) {
-                sid = Object.keys(predictions)[i];
-                p = p + names[sid] + '-' + predictions[sid] + ' ';
+                guid = Object.keys(predictions)[i];
+                p = p + names[guid] + '-' + predictions[guid] + ' ';
             }
             self.predictionsText.setText(p);
         })
@@ -125,8 +132,8 @@ export default class Game extends Phaser.Scene {
             console.log("yourturn received");
         })
 
-        this.socket.on('cardPlayed', function (gameObject, sid) {
-            if (sid != self.socket.id) {
+        this.socket.on('cardPlayed', function (gameObject, guid) {
+            if (guid != self.guid) {
                 let sprite = gameObject.textureKey;
                 self.dropZone.data.values.cards++;
                 let card = new Card(self);
@@ -140,7 +147,7 @@ export default class Game extends Phaser.Scene {
         this.scoreText = this.add.text(500, 150, ['Score: 0']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
 
         this.socket.on('scores', function (scores) {
-            self.scoreText.setText("Score: " + scores[self.socket.id]);
+            self.scoreText.setText("Score: " + scores[self.guid]);
         })
 
         function clearZone() {
@@ -191,11 +198,21 @@ export default class Game extends Phaser.Scene {
             self.zoneCards.push(gameObject);
             self.turnText.visible = false;
             console.log('drop turn text blank');
-            self.socket.emit('cardPlayed', gameObject, self.socket.id);
+            self.socket.emit('cardPlayed', self.gameId, self.guid, gameObject);
         })
     }
     
     update() {
     
+    }
+
+    resize(gameSize, baseSize, displaySize, resolution) {
+        let width = gameSize.width;
+        let height = gameSize.height;
+
+        this.cameras.resize(width, height);
+
+        const screenCenterX = width / 2;
+        const screenCenterY = height / 2;
     }
 }
