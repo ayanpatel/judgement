@@ -17,8 +17,6 @@ export default class Landing extends Phaser.Scene {
 
     	this.scale.on('resize', this.resize, this);
 
-    	//this.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
-
     	//this.socket = io('http://localhost:3000');
         this.socket = io('http://192.168.86.30:3000');
 
