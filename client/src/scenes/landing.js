@@ -9,6 +9,11 @@ export default class Landing extends Phaser.Scene {
 
     preload() {
     	this.load.html("form", "src/form.html");
+    	this.load.image("title", "src/assets/judgement_title.png");
+    	this.load.image("button_create_game_up", "src/assets/button_create_game_up.png");
+    	this.load.image("button_create_game_down", "src/assets/button_create_game_down.png");
+    	this.load.image("button_join_game_up", "src/assets/button_join_game_up.png");
+    	this.load.image("button_join_game_down", "src/assets/button_join_game_down.png");
     }
 
     create() {
@@ -37,11 +42,11 @@ export default class Landing extends Phaser.Scene {
         const screenCenterX = this.cameras.main.width / 2;
 		const screenCenterY = this.cameras.main.height / 2;
 
-		this.title = this.add.text(screenCenterX-200, 100, ['JUDGEMENT CARD GAME']).setFontSize(32).setFontFamily('Trebuchet MS').setColor('#ff69b4').disableInteractive();
+		this.title = this.add.sprite(screenCenterX+45, 100, "title");
 
-        this.createGame = this.add.text(screenCenterX-200, screenCenterY+50, ['CREATE GAME']).setFontSize(20).setFontFamily('Trebuchet MS').setColor('#00ffff').setInteractive();
+		this.createGame = this.add.sprite(screenCenterX-250, screenCenterY+150, "button_create_game_up").setInteractive();
 
-        this.joinGame = this.add.text(screenCenterX+100, screenCenterY+50, ['JOIN GAME']).setFontSize(20).setFontFamily('Trebuchet MS').setColor('#00ffff').setInteractive();
+        this.joinGame = this.add.sprite(screenCenterX+250, screenCenterY+150, "button_join_game_up").setInteractive();
 
         this.formInput = this.add.dom(screenCenterX, screenCenterY-50).createFromCache("form");
 
@@ -53,10 +58,10 @@ export default class Landing extends Phaser.Scene {
             self.socket.emit('createGame');
         })
         this.createGame.on('pointerover', function () {
-            self.createGame.setColor('#ff69b4');
+            self.createGame.setTexture("button_create_game_down");
         })
         this.createGame.on('pointerout', function () {
-            self.createGame.setColor('#00ffff');
+            self.createGame.setTexture("button_create_game_up");
         })
 
         this.joinGame.on('pointerdown', function () {
@@ -65,10 +70,10 @@ export default class Landing extends Phaser.Scene {
             self.socket.emit('joinGame', self.code.value);
         })
         this.joinGame.on('pointerover', function () {
-            self.joinGame.setColor('#ff69b4');
+            self.joinGame.setTexture("button_join_game_down");
         })
         this.joinGame.on('pointerout', function () {
-            self.joinGame.setColor('#00ffff');
+            self.joinGame.setTexture("button_join_game_up");
         })
 
         this.socket.on('gameId', function(gId) {
@@ -93,9 +98,9 @@ export default class Landing extends Phaser.Scene {
         const screenCenterX = width / 2;
 		const screenCenterY = height / 2;
 
-		this.title.setPosition(screenCenterX-200, 100);
-        this.createGame.setPosition(screenCenterX-200, screenCenterY+50);
-        this.joinGame.setPosition(screenCenterX+100, screenCenterY+50);
+		this.title.setPosition(screenCenterX+45, 100);
+        this.createGame.setPosition(screenCenterX-250, screenCenterY+150);
+        this.joinGame.setPosition(screenCenterX+250, screenCenterY+150);
         this.formInput.setPosition(screenCenterX, screenCenterY-50);
         this.invalidInput.setPosition(screenCenterX+50, screenCenterY-150);
     }

@@ -19,6 +19,12 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
+        this.load.image("title", "src/assets/judgement_title.png");
+        this.load.image("button_start_game_up", "src/assets/button_start_game_up.png");
+        this.load.image("button_start_game_down", "src/assets/button_start_game_down.png");
+        this.load.image("button_predict_up", "src/assets/button_predict_up.png");
+        this.load.image("button_predict_down", "src/assets/button_predict_down.png");
+
         let deck = ['red_back'];
         deck.push('2H', '3H', '4H', '5H', '6H', '7H', '8H', '9H', '10H', 'JH', 'QH', 'KH', 'AH');
         deck.push('2C', '3C', '4C', '5C', '6C', '7C', '8C', '9C', '10C', 'JC', 'QC', 'KC', 'AC');
@@ -53,7 +59,9 @@ export default class Game extends Phaser.Scene {
         self.playerName = self.name;
         self.socket.emit("name", self.gameId, self.name, self.guid);
 
-        this.gameIdText = this.add.text(75, 150, 'Game Code: ' + self.gameId).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+        this.title = this.add.sprite(screenCenterX+45, 50, "title").setScale(0.5,0.5);
+
+        this.gameIdText = this.add.text(screenCenterX-50, 100, 'Game Code: ' + self.gameId).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#ffa500').disableInteractive();
 
         this.playerText = this.add.text(1000, 150, self.playerName).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
 
@@ -64,10 +72,10 @@ export default class Game extends Phaser.Scene {
             self.playerText.setText('Players: ' + self.players);
         })
 
-        this.startText = this.add.text(75, 450, ['START GAME']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+        this.startText = this.add.sprite(125, 450, "button_start_game_up").setScale(0.5, 0.5);
         self.startText.visible = false;
 
-        this.predictText = this.add.text(75, 550, ['PREDICT']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
+        this.predictText = this.add.sprite(100, 550, "button_predict_up").setScale(0.5, 0.5);
         self.predictText.visible = false;
 
         this.predictText.on('pointerdown', function () {
@@ -75,10 +83,10 @@ export default class Game extends Phaser.Scene {
             self.socket.emit('prediction', self.gameId, self.guid, prediction);
         })
         this.predictText.on('pointerover', function () {
-            self.predictText.setColor('#ff69b4');
+            self.predictText.setTexture("button_predict_down");
         })
         this.predictText.on('pointerout', function () {
-            self.predictText.setColor('#00ffff');
+            self.predictText.setTexture("button_predict_up");
         })
 
         this.socket.on('isPlayerA', function () {
@@ -93,10 +101,10 @@ export default class Game extends Phaser.Scene {
             self.startText.visible = false;
         })
         this.startText.on('pointerover', function () {
-            self.startText.setColor('#ff69b4');
+            self.startText.setTexture("button_start_game_down");
         })
         this.startText.on('pointerout', function () {
-            self.startText.setColor('#00ffff');
+            self.startText.setTexture("button_start_game_up");
         })
 
         this.predictionsText = this.add.text(300, 200, ['Predictions: ']).setFontSize(18).setFontFamily('Trebuchet MS').setColor('#00ffff').disableInteractive();
@@ -214,5 +222,8 @@ export default class Game extends Phaser.Scene {
 
         const screenCenterX = width / 2;
         const screenCenterY = height / 2;
+
+        this.title.setPosition(screenCenterX+45, 50);
+        this.gameIdText.setPosition(screenCenterX-50, 100);
     }
 }
